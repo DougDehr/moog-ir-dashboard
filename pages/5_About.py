@@ -3,8 +3,10 @@
 import streamlit as st
 
 from src import config
+from src.theme import inject_moog_theme
 
 st.set_page_config(page_title="About — Moog IR Dashboard", page_icon="ℹ️", layout="wide")
+inject_moog_theme()
 st.title("ℹ️ About This Dashboard")
 
 st.markdown("""

@@ -9,8 +9,10 @@ from src.data_sources import (
     get_company_tickers_map, get_financial_series, quarterly_from_concept, instant_series, as_value_series,
 )
 from src.charts import fmt_money, fmt_pct, BRAND_COLORS
+from src.theme import inject_moog_theme, MAROON
 
 st.set_page_config(page_title="Financials — Moog IR Dashboard", page_icon="💰", layout="wide")
+inject_moog_theme()
 st.title("💰 Financial Trends")
 st.caption(
     "Built directly from Moog's XBRL-tagged filings on SEC EDGAR (data.sec.gov) — the same structured "
@@ -44,9 +46,9 @@ opi = as_value_series(moog_data["operating_income"]).rename("Operating Income")
 merged = pd.concat([rev, opi], axis=1).tail(20)
 
 fig = go.Figure()
-fig.add_trace(go.Bar(x=merged.index, y=merged["Net Sales"], name="Net Sales", marker_color="#0B2E5C"))
+fig.add_trace(go.Bar(x=merged.index, y=merged["Net Sales"], name="Net Sales", marker_color="#2E4057"))
 fig.add_trace(go.Scatter(x=merged.index, y=merged["Operating Income"], name="Operating Income",
-                          mode="lines+markers", line=dict(color="#C8102E", width=3), yaxis="y"))
+                          mode="lines+markers", line=dict(color=MAROON, width=3), yaxis="y"))
 fig.update_layout(
     template="plotly_white", height=460, hovermode="x unified",
     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
@@ -58,7 +60,7 @@ st.plotly_chart(fig, use_container_width=True)
 # Operating margin trend
 merged["Operating Margin"] = merged["Operating Income"] / merged["Net Sales"]
 fig_margin = go.Figure(go.Scatter(x=merged.index, y=merged["Operating Margin"], mode="lines+markers",
-                                   line=dict(color="#2E7D32", width=3)))
+                                   line=dict(color="#1B7F79", width=3)))
 fig_margin.update_layout(title="Operating Margin Trend", yaxis_tickformat=".0%",
                           template="plotly_white", height=320, margin=dict(l=10, r=10, t=40, b=10))
 st.plotly_chart(fig_margin, use_container_width=True)
@@ -75,12 +77,12 @@ ni = as_value_series(moog_data["net_income"]).rename("Net Income").tail(20)
 
 c1, c2 = st.columns(2)
 with c1:
-    fig_eps = go.Figure(go.Bar(x=eps.index, y=eps.values, marker_color="#8E24AA"))
+    fig_eps = go.Figure(go.Bar(x=eps.index, y=eps.values, marker_color="#5C6BC0"))
     fig_eps.update_layout(title="Diluted EPS by Quarter", template="plotly_white", height=380,
                            margin=dict(l=10, r=10, t=40, b=10))
     st.plotly_chart(fig_eps, use_container_width=True)
 with c2:
-    fig_ni = go.Figure(go.Bar(x=ni.index, y=ni.values, marker_color="#00838F"))
+    fig_ni = go.Figure(go.Bar(x=ni.index, y=ni.values, marker_color="#C98A2B"))
     fig_ni.update_layout(title="Net Income by Quarter", template="plotly_white", height=380,
                           margin=dict(l=10, r=10, t=40, b=10))
     st.plotly_chart(fig_ni, use_container_width=True)
@@ -135,11 +137,11 @@ if peer_choices:
         ticker_cik = get_company_tickers_map()
         fig_rev = go.Figure()
         fig_rev.add_trace(go.Scatter(x=rev.tail(16).index, y=rev.tail(16).values, name="Moog",
-                                      mode="lines+markers", line=dict(color="#C8102E", width=3)))
+                                      mode="lines+markers", line=dict(color=MAROON, width=3)))
         fig_om = go.Figure()
         moog_om = merged["Operating Margin"].tail(16)
         fig_om.add_trace(go.Scatter(x=moog_om.index, y=moog_om.values, name="Moog",
-                                     mode="lines+markers", line=dict(color="#C8102E", width=3)))
+                                     mode="lines+markers", line=dict(color=MAROON, width=3)))
 
         for i, tkr in enumerate(peer_choices):
             cik = ticker_cik.get(tkr.upper())

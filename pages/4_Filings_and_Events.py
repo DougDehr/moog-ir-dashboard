@@ -4,8 +4,10 @@ import streamlit as st
 
 from src import config
 from src.data_sources import get_recent_filings
+from src.theme import inject_moog_theme
 
 st.set_page_config(page_title="Filings & Events — Moog IR Dashboard", page_icon="📰", layout="wide")
+inject_moog_theme()
 st.title("📰 Filings & Events")
 
 st.subheader("Recent SEC Filings")

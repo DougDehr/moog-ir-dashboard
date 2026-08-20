@@ -6,16 +6,17 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
+# Moog's actual brand maroon leads the palette so Moog's own series reads
+# consistently across every chart (sampled from moog.com/investors.html).
 BRAND_COLORS = [
-    "#0B2E5C",  # navy (Moog primary)
-    "#C8102E",  # red accent
-    "#2E7D32",  # green
-    "#8E24AA",  # purple
-    "#F57C00",  # orange
-    "#00838F",  # teal
-    "#6D4C41",  # brown
+    "#87212E",  # Moog maroon
+    "#2E4057",  # slate navy
+    "#1B7F79",  # teal
+    "#C98A2B",  # gold
     "#5C6BC0",  # indigo
-    "#AFB42B",  # olive
+    "#4C7A4C",  # green
+    "#8C6A4E",  # brown
+    "#6C6C6C",  # neutral gray
 ]
 
 
@@ -162,7 +163,7 @@ def bar_compare(categories: list[str], values: list[float], title: str, y_title:
                  highlight: str | None = None, pct=False) -> go.Figure:
     colors = []
     for c in categories:
-        colors.append("#C8102E" if c == highlight else "#0B2E5C")
+        colors.append(BRAND_COLORS[0] if c == highlight else "#2E4057")
     text = [f"{v*100:.1f}%" if pct and v == v else (f"{v:.1f}" if v == v else "n/a") for v in values]
     fig = go.Figure(go.Bar(x=categories, y=values, marker_color=colors, text=text, textposition="outside"))
     fig.update_layout(

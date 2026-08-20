@@ -13,12 +13,14 @@ import pandas as pd
 from src import config
 from src.data_sources import get_quote, get_financial_series, quarterly_from_concept
 from src.charts import fmt_money, fmt_pct
+from src.theme import inject_moog_theme
 
 st.set_page_config(
     page_title="Moog Inc. — Investor Relations Dashboard",
     page_icon="✈️",
     layout="wide",
 )
+inject_moog_theme()
 
 # ---------------------------------------------------------------------------
 # Header

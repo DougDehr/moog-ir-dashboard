@@ -7,8 +7,10 @@ import streamlit as st
 from src import config
 from src.data_sources import get_fundamentals
 from src.charts import fmt_money, fmt_pct, fmt_ratio, bar_compare, BRAND_COLORS
+from src.theme import inject_moog_theme, MAROON
 
 st.set_page_config(page_title="Competitor Analysis — Moog IR Dashboard", page_icon="⚖️", layout="wide")
+inject_moog_theme()
 st.title("⚖️ Competitor Analysis")
 st.caption(
     "Peer set: aerospace & defense / precision-motion-control companies commonly used as Moog's "
@@ -101,7 +103,7 @@ if not scatter_df.empty:
             mode="markers+text",
             marker=dict(
                 size=max(20, min(70, (sizes.loc[tkr] / sizes.max()) * 70)),
-                color="#C8102E" if is_moog else BRAND_COLORS[i % len(BRAND_COLORS)],
+                color=MAROON if is_moog else BRAND_COLORS[i % len(BRAND_COLORS)],
                 opacity=0.85,
             ),
             text=[row["Company"]],
@@ -116,7 +118,7 @@ if not scatter_df.empty:
         margin=dict(l=10, r=10, t=30, b=10),
     )
     st.plotly_chart(fig2, use_container_width=True)
-    st.caption("Bubble size ≈ market capitalization. Moog highlighted in red.")
+    st.caption("Bubble size ≈ market capitalization. Moog highlighted in maroon.")
 else:
     st.info("Not enough vendor data returned to plot growth vs. margin for the selected peers.")
 
@@ -152,9 +154,9 @@ if moog_ticker in df.index and not peer_only.empty:
 
     fig3 = go.Figure()
     fig3.add_trace(go.Scatterpolar(r=moog_vals + moog_vals[:1], theta=cats + cats[:1],
-                                    fill="toself", name="Moog", line_color="#C8102E"))
+                                    fill="toself", name="Moog", line_color=MAROON))
     fig3.add_trace(go.Scatterpolar(r=peer_vals + peer_vals[:1], theta=cats + cats[:1],
-                                    fill="toself", name="Peer Average", line_color="#0B2E5C", opacity=0.6))
+                                    fill="toself", name="Peer Average", line_color="#2E4057", opacity=0.6))
     fig3.update_layout(
         polar=dict(radialaxis=dict(visible=True, range=[0, 1], showticklabels=False)),
         showlegend=True, template="plotly_white", height=500,
