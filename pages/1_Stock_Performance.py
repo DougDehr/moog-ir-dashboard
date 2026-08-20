@@ -13,7 +13,7 @@ from src.theme import inject_moog_theme
 
 st.set_page_config(page_title="Stock Performance — Moog IR Dashboard", page_icon="📈", layout="wide")
 inject_moog_theme()
-st.title("📈 Stock Price Performance vs. Competitors")
+st.title("Stock Price Performance vs. Competitors")
 st.caption("Source: Yahoo Finance (yfinance), adjusted close. Indexed charts rebase every series to 100 at the start of the selected window.")
 
 # ---------------------------------------------------------------------------

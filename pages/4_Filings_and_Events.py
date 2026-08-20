@@ -8,7 +8,7 @@ from src.theme import inject_moog_theme
 
 st.set_page_config(page_title="Filings & Events — Moog IR Dashboard", page_icon="📰", layout="wide")
 inject_moog_theme()
-st.title("📰 Filings & Events")
+st.title("Filings & Events")
 
 st.subheader("Recent SEC Filings")
 st.caption("Live from SEC EDGAR's submissions API (data.sec.gov) for Moog Inc. (CIK 0000067887).")

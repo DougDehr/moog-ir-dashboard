@@ -5,7 +5,9 @@ from an investor-relations angle: stock performance vs. competitors, valuation/m
 comparison, financial trends, and live SEC filings. All data is pulled at runtime from
 public sources — nothing is hardcoded or scraped from Moog's site content.
 
-Not affiliated with, endorsed by, or reviewed by Moog Inc.
+Not affiliated with, endorsed by, or reviewed by Moog Inc. The Moog wordmark in
+`assets/moog_logo_maroon.png` is Moog Inc.'s trademark, used here only to identify the
+company the dashboard covers.
 
 ## Pages
 

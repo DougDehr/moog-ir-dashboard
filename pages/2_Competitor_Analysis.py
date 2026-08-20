@@ -11,7 +11,7 @@ from src.theme import inject_moog_theme, MAROON
 
 st.set_page_config(page_title="Competitor Analysis — Moog IR Dashboard", page_icon="⚖️", layout="wide")
 inject_moog_theme()
-st.title("⚖️ Competitor Analysis")
+st.title("Competitor Analysis")
 st.caption(
     "Peer set: aerospace & defense / precision-motion-control companies commonly used as Moog's "
     "public-market comparables — flight-control actuation, motion control, and aerospace "

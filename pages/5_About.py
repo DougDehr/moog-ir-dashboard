@@ -7,7 +7,7 @@ from src.theme import inject_moog_theme
 
 st.set_page_config(page_title="About — Moog IR Dashboard", page_icon="ℹ️", layout="wide")
 inject_moog_theme()
-st.title("ℹ️ About This Dashboard")
+st.title("About This Dashboard")
 
 st.markdown("""
 This is an independent, unofficial investor-relations style dashboard for **Moog Inc. (NYSE: MOG.A / MOG.B)**,

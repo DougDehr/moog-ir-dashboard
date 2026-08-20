@@ -28,10 +28,10 @@ inject_moog_theme()
 
 col_title, col_badge = st.columns([5, 2])
 with col_title:
-    st.title("✈️ Moog Inc. — Investor Relations Dashboard")
+    st.image("assets/moog_logo_maroon.png", width=260)
     st.caption(
-        f"Precision motion control • {config.COMPANY_HQ} • NYSE: MOG.A / MOG.B  ·  "
-        "Unofficial dashboard, not affiliated with Moog Inc."
+        f"Investor Relations Dashboard · Precision motion control • {config.COMPANY_HQ} • "
+        "NYSE: MOG.A / MOG.B  ·  Unofficial dashboard, not affiliated with Moog Inc."
     )
 with col_badge:
     st.link_button("Official Moog IR Site ↗", config.IR_LINKS["Investor Relations Home"], use_container_width=True)
@@ -167,11 +167,11 @@ st.divider()
 left, right = st.columns(2)
 with left:
     st.subheader("In This Dashboard")
-    st.page_link("pages/1_Stock_Performance.py", label="📈 Stock Performance vs. Competitors", icon="📈")
-    st.page_link("pages/2_Competitor_Analysis.py", label="⚖️ Competitor Analysis", icon="⚖️")
-    st.page_link("pages/3_Financials.py", label="💰 Financials Trend", icon="💰")
-    st.page_link("pages/4_Filings_and_Events.py", label="📰 Filings & Events", icon="📰")
-    st.page_link("pages/5_About.py", label="ℹ️ About & Data Sources", icon="ℹ️")
+    st.page_link("pages/1_Stock_Performance.py", label="Stock Performance vs. Competitors")
+    st.page_link("pages/2_Competitor_Analysis.py", label="Competitor Analysis")
+    st.page_link("pages/3_Financials.py", label="Financials Trend")
+    st.page_link("pages/4_Filings_and_Events.py", label="Filings & Events")
+    st.page_link("pages/5_About.py", label="About & Data Sources")
 
 with right:
     st.subheader("Official Moog IR Site")

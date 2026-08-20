@@ -13,7 +13,7 @@ from src.theme import inject_moog_theme, MAROON
 
 st.set_page_config(page_title="Financials — Moog IR Dashboard", page_icon="💰", layout="wide")
 inject_moog_theme()
-st.title("💰 Financial Trends")
+st.title("Financial Trends")
 st.caption(
     "Built directly from Moog's XBRL-tagged filings on SEC EDGAR (data.sec.gov) — the same structured "
     "data underlying Moog's 10-K/10-Q filings. Figures are as-filed and may include restatements."
