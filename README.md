@@ -11,7 +11,7 @@ company the dashboard covers.
 
 ## Pages
 
-- **Overview** (`app.py`) — Moog logo, live quote strip for both share classes,
+- **Summary** (`Summary.py`) — Moog logo, live quote strip for both share classes,
   latest-quarter KPIs pulled from SEC XBRL, Moog's "Why Invest" pillars and reportable
   segments, quick links to Moog's official IR site.
 - **Stock Performance** — indexed price chart vs. selected competitors and benchmarks
@@ -40,7 +40,7 @@ company the dashboard covers.
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-streamlit run app.py
+streamlit run Summary.py
 ```
 
 ## Configuration
@@ -69,7 +69,7 @@ this repo is public.
    ```
 2. Go to [share.streamlit.io](https://share.streamlit.io), sign in with GitHub, and click
    **New app**.
-3. Select this repo/branch and set the main file path to `app.py`.
+3. Select this repo/branch and set the main file path to `Summary.py`.
 4. Under **Advanced settings → Secrets**, paste:
    ```toml
    SEC_CONTACT_EMAIL = "you@example.com"

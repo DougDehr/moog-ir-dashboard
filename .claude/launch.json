@@ -4,7 +4,7 @@
     {
       "name": "moog-ir-dashboard",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "streamlit", "run", "app.py", "--server.headless=true"],
+      "runtimeArgs": ["-m", "streamlit", "run", "Summary.py", "--server.headless=true"],
       "port": 8501
     }
   ]
