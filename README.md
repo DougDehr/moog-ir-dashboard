@@ -11,6 +11,10 @@ company the dashboard covers.
 
 ## Pages
 
+`app.py` is a thin router (`st.navigation`) — it declares every page and its sidebar
+label in one place, so the label doesn't have to match the underlying filename. Run
+the app via `app.py`; the actual page content lives in `Summary.py` and `pages/`.
+
 - **Summary** (`Summary.py`) — Moog logo, live quote strip for both share classes,
   latest-quarter KPIs pulled from SEC XBRL, Moog's "Why Invest" pillars and reportable
   segments, quick links to Moog's official IR site.
@@ -40,7 +44,7 @@ company the dashboard covers.
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-streamlit run Summary.py
+streamlit run app.py
 ```
 
 ## Configuration
@@ -69,7 +73,7 @@ this repo is public.
    ```
 2. Go to [share.streamlit.io](https://share.streamlit.io), sign in with GitHub, and click
    **New app**.
-3. Select this repo/branch and set the main file path to `Summary.py`.
+3. Select this repo/branch and set the main file path to `app.py`.
 4. Under **Advanced settings → Secrets**, paste:
    ```toml
    SEC_CONTACT_EMAIL = "you@example.com"
