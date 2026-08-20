@@ -1,6 +1,7 @@
 """Stock price performance: Moog vs. competitors and benchmarks."""
 
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 
 from src import config
@@ -9,7 +10,7 @@ from src.charts import (
     indexed_performance_chart, build_returns_table, annualized_volatility,
     beta_vs_benchmark, fmt_pct, bar_compare,
 )
-from src.theme import inject_moog_theme
+from src.theme import inject_moog_theme, MAROON
 
 st.set_page_config(page_title="Stock Performance — Moog IR Dashboard", page_icon="📈", layout="wide")
 inject_moog_theme()
@@ -188,5 +189,16 @@ div = get_dividends(moog_ticker, period="5y")
 if div.empty:
     st.info("No dividend data returned for this ticker/window.")
 else:
-    st.bar_chart(div)
+    # Plotly, not st.bar_chart: Streamlit's native chart elements import altair
+    # under the hood purely for a version check, and altair currently fails to
+    # import at all on some newer Python runtimes (observed on Streamlit Cloud's
+    # Python 3.14) — every other chart in this app already uses Plotly directly
+    # for exactly this reason, so this one should too.
+    fig_div = go.Figure(go.Bar(x=div.index, y=div.values, marker_color=MAROON))
+    fig_div.update_layout(
+        template="plotly_white", height=320,
+        yaxis_title="Dividend per Share ($)",
+        margin=dict(l=10, r=10, t=10, b=10),
+    )
+    st.plotly_chart(fig_div, use_container_width=True)
     st.caption(f"Trailing 12-month dividends paid: ${div[div.index >= div.index.max() - pd.Timedelta(days=365)].sum():.2f}/share")
