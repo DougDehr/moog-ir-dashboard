@@ -107,7 +107,42 @@ def get_fundamentals(ticker: str) -> dict:
         "trailingEps": g("trailingEps"),
         "fiftyTwoWeekHigh": g("fiftyTwoWeekHigh"),
         "fiftyTwoWeekLow": g("fiftyTwoWeekLow"),
+        "currentPrice": g("currentPrice"),
+        "targetHighPrice": g("targetHighPrice"),
+        "targetLowPrice": g("targetLowPrice"),
+        "targetMeanPrice": g("targetMeanPrice"),
+        "targetMedianPrice": g("targetMedianPrice"),
+        "numberOfAnalystOpinions": g("numberOfAnalystOpinions"),
+        "recommendationKey": g("recommendationKey"),
+        "recommendationMean": g("recommendationMean"),
     }
+
+
+@st.cache_data(ttl=60 * 60 * 6, show_spinner=False)
+def get_recommendations_trend(ticker: str) -> pd.DataFrame:
+    """Monthly buy/hold/sell analyst-count trend (current month + prior 3), from Yahoo Finance."""
+    try:
+        tk = yf.Ticker(ticker)
+        df = tk.recommendations
+    except Exception:
+        return pd.DataFrame()
+    if df is None or df.empty:
+        return pd.DataFrame()
+    return df
+
+
+@st.cache_data(ttl=60 * 60 * 6, show_spinner=False)
+def get_upgrades_downgrades(ticker: str, limit: int = 25) -> pd.DataFrame:
+    """Recent analyst rating/price-target actions (firm, grade change, price target) from Yahoo Finance."""
+    try:
+        tk = yf.Ticker(ticker)
+        df = tk.upgrades_downgrades
+    except Exception:
+        return pd.DataFrame()
+    if df is None or df.empty:
+        return pd.DataFrame()
+    df = df.reset_index().sort_values("GradeDate", ascending=False).head(limit)
+    return df
 
 
 @st.cache_data(ttl=60 * 60 * 6, show_spinner=False)

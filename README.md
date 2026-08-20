@@ -11,18 +11,21 @@ company the dashboard covers.
 
 ## Pages
 
-- **Overview** (`app.py`) — live quote strip for both share classes, latest-quarter KPIs
-  pulled from SEC XBRL, Moog's "Why Invest" pillars and reportable segments, quick links
-  to Moog's official IR site.
-- **📈 Stock Performance** — indexed price chart vs. selected competitors and benchmarks
+- **Overview** (`app.py`) — Moog logo, live quote strip for both share classes,
+  latest-quarter KPIs pulled from SEC XBRL, Moog's "Why Invest" pillars and reportable
+  segments, quick links to Moog's official IR site.
+- **Stock Performance** — indexed price chart vs. selected competitors and benchmarks
   (S&P 500, Aerospace & Defense ETF), trailing returns table, volatility, beta, dividends.
-- **⚖️ Competitor Analysis** — valuation/margin comparison table, margin bar charts,
+- **Competitor Analysis** — valuation/margin comparison table, margin bar charts,
   growth-vs-margin bubble chart, Moog-vs-peer-average radar.
-- **💰 Financials** — quarterly revenue/operating income/EPS trend and balance sheet
+- **Analysts** — sell-side price targets and consensus rating for Moog, price-target
+  range chart, recommendation trend, recent rating actions, and the same coverage
+  metrics compared across competitors (upside/downside to target, # of analysts).
+- **Financials** — quarterly revenue/operating income/EPS trend and balance sheet
   snapshot from SEC EDGAR XBRL, with optional peer overlay.
-- **📰 Filings & Events** — live recent SEC filings list, plus links to Moog's official
+- **Filings & Events** — live recent SEC filings list, plus links to Moog's official
   earnings releases, presentations, and 10-Q/10-K filings.
-- **ℹ️ About** — data sources, peer-set rationale, and limitations.
+- **About** — data sources, peer-set rationale, and limitations.
 
 ## Data sources
 

@@ -169,9 +169,10 @@ with left:
     st.subheader("In This Dashboard")
     st.page_link("pages/1_Stock_Performance.py", label="Stock Performance vs. Competitors")
     st.page_link("pages/2_Competitor_Analysis.py", label="Competitor Analysis")
-    st.page_link("pages/3_Financials.py", label="Financials Trend")
-    st.page_link("pages/4_Filings_and_Events.py", label="Filings & Events")
-    st.page_link("pages/5_About.py", label="About & Data Sources")
+    st.page_link("pages/3_Analysts.py", label="Analyst Coverage")
+    st.page_link("pages/4_Financials.py", label="Financials Trend")
+    st.page_link("pages/5_Filings_and_Events.py", label="Filings & Events")
+    st.page_link("pages/6_About.py", label="About & Data Sources")
 
 with right:
     st.subheader("Official Moog IR Site")

@@ -78,8 +78,8 @@ def indexed_performance_chart(price_df: pd.DataFrame, title: str = "Indexed Pric
         xaxis_title=None,
         yaxis_title="Indexed value (start = 100)",
         hovermode="x unified",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
-        margin=dict(l=10, r=10, t=60, b=10),
+        legend=dict(orientation="h", yanchor="top", y=-0.18, xanchor="center", x=0.5),
+        margin=dict(l=10, r=10, t=60, b=90),
         template="plotly_white",
     )
     return fig
