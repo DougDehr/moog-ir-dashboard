@@ -19,21 +19,29 @@ the app via `app.py`; the actual page content lives in `Summary.py` and `pages/`
   latest-quarter KPIs pulled from SEC XBRL, Moog's "Why Invest" pillars and reportable
   segments, quick links to Moog's official IR site.
 - **Stock Performance** — indexed price chart vs. selected competitors and benchmarks
-  (S&P 500, Aerospace & Defense ETF), trailing returns table, volatility, beta, dividends.
+  (S&P 500, Aerospace & Defense ETF), trailing returns table, volatility, beta, short
+  interest and trading liquidity vs. competitors, dividends.
 - **Competitor Analysis** — valuation/margin comparison table, margin bar charts,
   growth-vs-margin bubble chart, Moog-vs-peer-average radar.
 - **Analysts** — sell-side price targets and consensus rating for Moog, price-target
-  range chart, recommendation trend, recent rating actions, and the same coverage
-  metrics compared across competitors (upside/downside to target, # of analysts).
+  range chart, recommendation trend, recent rating actions, earnings history (actual vs.
+  consensus EPS and surprise %), EPS estimate-revision trend, analyst coverage density
+  (analysts per $1B of revenue), and the same coverage metrics compared across competitors.
+- **Ownership** — institutional holders, insider (Form 4) transaction history and net
+  buy/sell activity, plus institutional/insider ownership % compared across competitors.
 - **Financials** — quarterly revenue/operating income/EPS trend and balance sheet
   snapshot from SEC EDGAR XBRL, with optional peer overlay.
 - **Filings & Events** — live recent SEC filings list, plus links to Moog's official
   earnings releases, presentations, and 10-Q/10-K filings.
+- **Export** — generates a single-page PDF snapshot (market data, latest-quarter
+  financials, analyst/ownership/short-interest summary, peer comparison table) for
+  board decks or management briefings.
 - **About** — data sources, peer-set rationale, and limitations.
 
 ## Data sources
 
-- **Yahoo Finance** (via `yfinance`) — prices, dividends, valuation multiples, margins.
+- **Yahoo Finance** (via `yfinance`) — prices, dividends, valuation multiples, margins,
+  analyst estimates/ratings/earnings history, institutional & insider holdings, short interest.
 - **SEC EDGAR** (`data.sec.gov` XBRL + submissions APIs) — revenue, net income, EPS,
   balance sheet, filing list. No API key required, but SEC does require a descriptive
   `User-Agent` with a contact string on every request (see Configuration below).

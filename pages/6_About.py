@@ -20,6 +20,9 @@ built entirely from public data. It is **not** produced, reviewed, sponsored, or
 | Stock prices, dividends, valuation multiples, margins | [Yahoo Finance](https://finance.yahoo.com) via the `yfinance` library | Vendor-calculated fundamentals (P/E, margins, growth) can lag official filings and occasionally differ from as-reported GAAP figures. |
 | Revenue, net income, EPS, balance sheet | [SEC EDGAR XBRL](https://www.sec.gov/edgar) `companyconcept` API | Structured data extracted directly from Moog's and peers' XBRL-tagged 10-K/10-Q filings — the same data underlying the filings themselves. |
 | Filing list | SEC EDGAR `submissions` API | Live list of recent 10-K/10-Q/8-K filings. |
+| Analyst price targets, ratings, estimate revisions, earnings history | [Yahoo Finance](https://finance.yahoo.com) via `yfinance` | Vendor-aggregated from sell-side estimates; can lag individual firms' own publications. |
+| Institutional holders, insider (Form 4) transactions | [Yahoo Finance](https://finance.yahoo.com) via `yfinance` | Aggregated from 13F and Form 3/4/5 filings; typically lags the actual filing by several weeks. |
+| Short interest, trading volume | [Yahoo Finance](https://finance.yahoo.com) via `yfinance` | Short interest is exchange-reported roughly twice monthly, so it can lag by up to ~2 weeks. |
 | Company narrative (segments, "Why Invest" pillars, IR site structure) | [moog.com/investors](https://www.moog.com/investors.html) | Summarized, not reproduced verbatim. |
 
 ### Peer / competitor set

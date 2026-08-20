@@ -115,6 +115,16 @@ def get_fundamentals(ticker: str) -> dict:
         "numberOfAnalystOpinions": g("numberOfAnalystOpinions"),
         "recommendationKey": g("recommendationKey"),
         "recommendationMean": g("recommendationMean"),
+        "sharesShort": g("sharesShort"),
+        "sharesShortPriorMonth": g("sharesShortPriorMonth"),
+        "shortRatio": g("shortRatio"),
+        "shortPercentOfFloat": g("shortPercentOfFloat"),
+        "averageVolume": g("averageVolume"),
+        "averageVolume10days": g("averageVolume10days"),
+        "floatShares": g("floatShares"),
+        "sharesOutstanding": g("sharesOutstanding"),
+        "heldPercentInsiders": g("heldPercentInsiders"),
+        "heldPercentInstitutions": g("heldPercentInstitutions"),
     }
 
 
@@ -143,6 +153,96 @@ def get_upgrades_downgrades(ticker: str, limit: int = 25) -> pd.DataFrame:
         return pd.DataFrame()
     df = df.reset_index().sort_values("GradeDate", ascending=False).head(limit)
     return df
+
+
+@st.cache_data(ttl=60 * 60 * 6, show_spinner=False)
+def get_major_holders_breakdown(ticker: str) -> dict:
+    """Insider/institution ownership % breakdown from Yahoo Finance."""
+    try:
+        tk = yf.Ticker(ticker)
+        mh = tk.major_holders
+    except Exception:
+        return {}
+    if mh is None or mh.empty or "Value" not in mh.columns:
+        return {}
+    return mh["Value"].to_dict()
+
+
+@st.cache_data(ttl=60 * 60 * 6, show_spinner=False)
+def get_institutional_holders(ticker: str, limit: int = 10) -> pd.DataFrame:
+    """Top institutional holders (name, shares, % held, value, QoQ change) from Yahoo Finance."""
+    try:
+        tk = yf.Ticker(ticker)
+        df = tk.institutional_holders
+    except Exception:
+        return pd.DataFrame()
+    if df is None or df.empty:
+        return pd.DataFrame()
+    return df.head(limit)
+
+
+# Rough classifier for insider-transaction free text, since yfinance's own
+# 'Transaction' column is blank for most filers. Order matters (checked top
+# to bottom); falls back to "Other".
+_INSIDER_TEXT_RULES = [
+    ("sale", "Sale"),
+    ("purchase", "Purchase"),
+    ("gift", "Gift"),
+    ("conversion", "Option Exercise / Conversion"),
+    ("exercise", "Option Exercise / Conversion"),
+    ("award", "Award"),
+]
+
+
+def _classify_insider_text(text: str) -> str:
+    t = (text or "").lower()
+    for needle, label in _INSIDER_TEXT_RULES:
+        if needle in t:
+            return label
+    return "Other"
+
+
+@st.cache_data(ttl=60 * 60 * 6, show_spinner=False)
+def get_insider_transactions(ticker: str, limit: int = 25) -> pd.DataFrame:
+    """Recent Form 4 insider transactions (name, role, action, shares, value) from Yahoo Finance."""
+    try:
+        tk = yf.Ticker(ticker)
+        df = tk.insider_transactions
+    except Exception:
+        return pd.DataFrame()
+    if df is None or df.empty:
+        return pd.DataFrame()
+    df = df.copy()
+    df["Action"] = df.get("Text", "").apply(_classify_insider_text)
+    if "Start Date" in df.columns:
+        df = df.sort_values("Start Date", ascending=False)
+    return df.head(limit)
+
+
+@st.cache_data(ttl=60 * 60 * 6, show_spinner=False)
+def get_earnings_history(ticker: str, limit: int = 12) -> pd.DataFrame:
+    """Trailing quarterly EPS estimate vs. actual and surprise %, from Yahoo Finance."""
+    try:
+        tk = yf.Ticker(ticker)
+        df = tk.earnings_dates
+    except Exception:
+        return pd.DataFrame()
+    if df is None or df.empty:
+        return pd.DataFrame()
+    df = df.reset_index().rename(columns={"index": "Earnings Date"})
+    df = df.dropna(subset=["Reported EPS"]).sort_values(df.columns[0])
+    return df.tail(limit)
+
+
+@st.cache_data(ttl=60 * 60 * 6, show_spinner=False)
+def get_eps_trend(ticker: str) -> pd.DataFrame:
+    """Consensus current-quarter/current-year EPS estimate now vs. 7/30/60/90 days ago."""
+    try:
+        tk = yf.Ticker(ticker)
+        df = tk.eps_trend
+    except Exception:
+        return pd.DataFrame()
+    return df if df is not None else pd.DataFrame()
 
 
 @st.cache_data(ttl=60 * 60 * 6, show_spinner=False)

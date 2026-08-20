@@ -4,10 +4,10 @@ import pandas as pd
 import streamlit as st
 
 from src import config
-from src.data_sources import get_price_history, get_dividends
+from src.data_sources import get_price_history, get_dividends, get_fundamentals
 from src.charts import (
     indexed_performance_chart, build_returns_table, annualized_volatility,
-    beta_vs_benchmark, fmt_pct,
+    beta_vs_benchmark, fmt_pct, bar_compare,
 )
 from src.theme import inject_moog_theme
 
@@ -107,6 +107,75 @@ with c2:
         st.dataframe(beta.apply(lambda v: f"{v:.2f}" if v == v else "n/a").rename("Beta"), use_container_width=True)
     else:
         st.info("Add the S&P 500 benchmark in the sidebar to compute beta.")
+
+st.divider()
+
+# ---------------------------------------------------------------------------
+# Short interest & liquidity
+# ---------------------------------------------------------------------------
+
+st.subheader("Short Interest & Liquidity")
+
+with st.spinner("Pulling short interest data from Yahoo Finance…"):
+    moog_short = get_fundamentals(moog_ticker)
+
+s1, s2, s3, s4 = st.columns(4)
+s1.metric("Short % of Float", fmt_pct(moog_short.get("shortPercentOfFloat")))
+
+short_shares = moog_short.get("sharesShort")
+prior_short = moog_short.get("sharesShortPriorMonth")
+short_delta = None
+if short_shares and prior_short:
+    short_delta = f"{(short_shares / prior_short - 1) * 100:+.1f}% vs. prior month"
+s2.metric("Shares Short", f"{int(short_shares):,}" if short_shares else "n/a", delta=short_delta)
+
+short_ratio = moog_short.get("shortRatio")
+s3.metric("Days to Cover", f"{short_ratio:.1f}" if short_ratio == short_ratio and short_ratio is not None else "n/a")
+
+avg_vol = moog_short.get("averageVolume10days")
+s4.metric("Avg Daily Volume (10D)", f"{int(avg_vol):,}" if avg_vol else "n/a")
+
+if not peer_choices:
+    st.info("Select competitors in the sidebar to compare short interest and liquidity.")
+else:
+    with st.spinner("Pulling peer short interest/liquidity data…"):
+        liq_rows = [get_fundamentals(t) for t in [moog_ticker] + peer_choices]
+    liq_name_map = {moog_ticker: config.COMPANY_NAME, **config.PEERS}
+    liq_records = []
+    for r in liq_rows:
+        if "error" in r:
+            continue
+        liq_records.append({
+            "Company": liq_name_map.get(r["ticker"], r["ticker"]),
+            "Short % of Float": r.get("shortPercentOfFloat"),
+            "Avg Daily Volume": r.get("averageVolume"),
+        })
+    liq_df = pd.DataFrame(liq_records)
+
+    if liq_df.empty:
+        st.warning("Could not retrieve peer short interest/liquidity data right now — Yahoo Finance may be rate-limiting.")
+    else:
+        lc1, lc2 = st.columns(2)
+        with lc1:
+            pdf1 = liq_df.dropna(subset=["Short % of Float"])
+            if not pdf1.empty:
+                fig_short = bar_compare(
+                    list(pdf1["Company"]), list(pdf1["Short % of Float"]),
+                    title="Short Interest (% of Float)", pct=True, highlight=config.COMPANY_NAME,
+                )
+                fig_short.update_layout(height=380, xaxis_tickangle=-35)
+                st.plotly_chart(fig_short, use_container_width=True)
+        with lc2:
+            pdf2 = liq_df.dropna(subset=["Avg Daily Volume"])
+            if not pdf2.empty:
+                fig_vol = bar_compare(
+                    list(pdf2["Company"]), list(pdf2["Avg Daily Volume"]),
+                    title="Average Daily Trading Volume (Shares)", highlight=config.COMPANY_NAME,
+                )
+                fig_vol.update_layout(height=380, xaxis_tickangle=-35)
+                st.plotly_chart(fig_vol, use_container_width=True)
+
+        st.caption("Short interest is typically reported by exchanges twice monthly, so this figure can lag by up to ~2 weeks.")
 
 st.divider()
 

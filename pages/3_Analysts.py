@@ -6,7 +6,9 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from src import config
-from src.data_sources import get_fundamentals, get_recommendations_trend, get_upgrades_downgrades
+from src.data_sources import (
+    get_fundamentals, get_recommendations_trend, get_upgrades_downgrades, get_earnings_history, get_eps_trend,
+)
 from src.charts import fmt_money, fmt_pct, bar_compare, BRAND_COLORS
 from src.theme import inject_moog_theme, MAROON
 
@@ -143,6 +145,71 @@ else:
                               if "currentPriceTarget" in ud.columns else None),
         })
         st.dataframe(ud_display, use_container_width=True, hide_index=True)
+
+st.divider()
+
+# ---------------------------------------------------------------------------
+# Earnings history & estimate revisions
+# ---------------------------------------------------------------------------
+
+st.subheader("Earnings History & Estimate Revisions")
+st.caption(
+    "Actual results vs. consensus each quarter, and whether the Street has been raising or cutting "
+    "estimates ahead of the next print."
+)
+
+eh = get_earnings_history(moog_ticker, limit=12)
+if eh.empty:
+    st.info("No earnings history returned for this ticker.")
+else:
+    date_col = eh.columns[0]
+    eh_plot = eh.copy()
+    eh_plot["Quarter"] = pd.to_datetime(eh_plot[date_col]).dt.strftime("%b %Y")
+
+    fig_eh = go.Figure()
+    fig_eh.add_trace(go.Bar(x=eh_plot["Quarter"], y=eh_plot["EPS Estimate"], name="EPS Estimate", marker_color="#2E4057"))
+    fig_eh.add_trace(go.Bar(x=eh_plot["Quarter"], y=eh_plot["Reported EPS"], name="Reported EPS", marker_color=MAROON))
+    fig_eh.update_layout(
+        barmode="group", title="Actual vs. Estimated EPS by Quarter",
+        template="plotly_white", height=380,
+        legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5),
+        margin=dict(l=10, r=10, t=40, b=70),
+    )
+    st.plotly_chart(fig_eh, use_container_width=True)
+
+    if "Surprise(%)" in eh_plot.columns:
+        surprise_colors = ["#4C7A4C" if v == v and v >= 0 else MAROON for v in eh_plot["Surprise(%)"]]
+        fig_surprise = go.Figure(go.Bar(x=eh_plot["Quarter"], y=eh_plot["Surprise(%)"], marker_color=surprise_colors))
+        fig_surprise.update_layout(
+            title="EPS Surprise % by Quarter (Beat vs. Miss)", yaxis_title="Surprise %",
+            template="plotly_white", height=320, margin=dict(l=10, r=10, t=40, b=10),
+        )
+        st.plotly_chart(fig_surprise, use_container_width=True)
+
+trend = get_eps_trend(moog_ticker)
+if trend.empty:
+    st.info("No EPS estimate-trend data returned for this ticker.")
+else:
+    st.markdown("**Consensus EPS Estimate Trend**")
+    period_map = {"0q": "Current Qtr", "+1q": "Next Qtr", "0y": "Current FY", "+1y": "Next FY"}
+    cols_order = ["90daysAgo", "60daysAgo", "30daysAgo", "7daysAgo", "current"]
+    col_labels = {"90daysAgo": "90d Ago", "60daysAgo": "60d Ago", "30daysAgo": "30d Ago", "7daysAgo": "7d Ago", "current": "Current"}
+    fig_trend2 = go.Figure()
+    for i, period in enumerate([p for p in period_map if p in trend.index]):
+        row = trend.loc[period]
+        xs = [col_labels[c] for c in cols_order if c in row.index]
+        ys = [row[c] for c in cols_order if c in row.index]
+        fig_trend2.add_trace(go.Scatter(
+            x=xs, y=ys, mode="lines+markers", name=period_map[period],
+            line=dict(width=2.5, color=BRAND_COLORS[i % len(BRAND_COLORS)]),
+        ))
+    fig_trend2.update_layout(
+        title="Where Consensus EPS Estimates Have Moved", template="plotly_white", height=380,
+        legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5),
+        margin=dict(l=10, r=10, t=40, b=70),
+    )
+    st.plotly_chart(fig_trend2, use_container_width=True)
+    st.caption("Rising lines = analysts have been raising estimates over the period; falling = cutting estimates.")
 
 st.divider()
 

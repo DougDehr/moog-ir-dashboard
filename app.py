@@ -17,8 +17,10 @@ pg = st.navigation([
     st.Page("pages/1_Stock_Performance.py", title="Stock Performance"),
     st.Page("pages/2_Competitor_Analysis.py", title="Competitor Analysis"),
     st.Page("pages/3_Analysts.py", title="Analysts"),
+    st.Page("pages/Ownership.py", title="Ownership"),
     st.Page("pages/4_Financials.py", title="Financials"),
     st.Page("pages/5_Filings_and_Events.py", title="Filings and Events"),
+    st.Page("pages/Export.py", title="Export"),
     st.Page("pages/6_About.py", title="About"),
 ])
 pg.run()
