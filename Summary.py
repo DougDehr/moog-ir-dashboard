@@ -13,7 +13,7 @@ import pandas as pd
 from src import config
 from src.data_sources import get_quote, get_financial_series, quarterly_from_concept
 from src.charts import fmt_money, fmt_pct
-from src.theme import inject_moog_theme
+from src.theme import inject_moog_theme, MAROON
 
 st.set_page_config(
     page_title="Moog Inc. — Investor Relations Dashboard",
@@ -29,9 +29,14 @@ inject_moog_theme()
 col_title, col_badge = st.columns([5, 2])
 with col_title:
     st.image("assets/moog_logo_maroon.png", width=260)
+    st.markdown(
+        f'<div style="font-weight:700; color:{MAROON}; font-size:1.15rem; margin-top:0.35rem;">'
+        f"Investor Relations Dashboard</div>",
+        unsafe_allow_html=True,
+    )
     st.caption(
-        f"Investor Relations Dashboard · Precision motion control • {config.COMPANY_HQ} • "
-        "NYSE: MOG.A / MOG.B  ·  Unofficial dashboard, not affiliated with Moog Inc."
+        f"Precision motion control • {config.COMPANY_HQ} • NYSE: MOG.A / MOG.B  ·  "
+        "Unofficial dashboard, not affiliated with Moog Inc."
     )
 with col_badge:
     st.link_button("Official Moog IR Site ↗", config.IR_LINKS["Investor Relations Home"], use_container_width=True)

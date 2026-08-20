@@ -164,14 +164,19 @@ else:
     for r in rows:
         if "error" in r:
             continue
+        num_analysts = r.get("numberOfAnalystOpinions")
+        revenue = r.get("totalRevenue")
+        revenue_b = revenue / 1e9 if revenue else None
         records.append({
             "Ticker": r["ticker"],
             "Company": name_map.get(r["ticker"], r["ticker"]),
             "Current Price": r.get("currentPrice"),
             "Mean Target": r.get("targetMeanPrice"),
             "Upside/Downside": _upside(r.get("currentPrice"), r.get("targetMeanPrice")),
-            "# Analysts": r.get("numberOfAnalystOpinions"),
+            "# Analysts": num_analysts,
             "Consensus": _rec_label(r.get("recommendationKey")),
+            "Revenue (TTM)": revenue,
+            "Analysts per $1B Revenue": (num_analysts / revenue_b) if num_analysts and revenue_b else None,
         })
     peer_df = pd.DataFrame(records)
 
@@ -183,6 +188,10 @@ else:
         display_df["Mean Target"] = display_df["Mean Target"].apply(fmt_money)
         display_df["Upside/Downside"] = display_df["Upside/Downside"].apply(lambda v: fmt_pct(v) if v is not None else "n/a")
         display_df["# Analysts"] = display_df["# Analysts"].apply(lambda v: int(v) if v == v and v is not None else "n/a")
+        display_df["Revenue (TTM)"] = display_df["Revenue (TTM)"].apply(fmt_money)
+        display_df["Analysts per $1B Revenue"] = display_df["Analysts per $1B Revenue"].apply(
+            lambda v: f"{v:.2f}" if v is not None and v == v else "n/a"
+        )
         st.dataframe(display_df.drop(columns=["Ticker"]), use_container_width=True, hide_index=True)
 
         c1, c2 = st.columns(2)
@@ -204,6 +213,23 @@ else:
                 )
                 fig_cov.update_layout(height=400, xaxis_tickangle=-35)
                 st.plotly_chart(fig_cov, use_container_width=True)
+
+        st.markdown("**Analyst Coverage Density**")
+        st.caption(
+            "Covering analysts per $1 billion of trailing-twelve-month revenue — a rough read on how "
+            "closely followed a stock is relative to its size, not just in absolute analyst count."
+        )
+        plot_df3 = peer_df.dropna(subset=["Analysts per $1B Revenue"])
+        if not plot_df3.empty:
+            fig_density = bar_compare(
+                list(plot_df3["Company"]), list(plot_df3["Analysts per $1B Revenue"]),
+                title="Analysts Covering per $1B of Revenue", y_title="Analysts / $1B Revenue",
+                highlight=config.COMPANY_NAME,
+            )
+            fig_density.update_layout(height=420, xaxis_tickangle=-35)
+            st.plotly_chart(fig_density, use_container_width=True)
+        else:
+            st.info("Not enough vendor data (analyst count and/or revenue) returned to compute coverage density.")
 
         st.caption(
             "Consensus rating and price targets are vendor-aggregated from sell-side analyst estimates "
