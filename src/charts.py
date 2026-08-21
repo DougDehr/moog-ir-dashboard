@@ -48,20 +48,28 @@ def fmt_ratio(x, digits=1):
 
 
 def normalize_to_100(price_df: pd.DataFrame) -> pd.DataFrame:
-    """Rebase each column to start at 100 on the first common non-NaN date."""
+    """Rebase each column to start at 100 on its own first valid value.
+
+    Deliberately avoids any label-based .loc[timestamp] lookup — pulling a
+    'first valid index' label from one derived Series and then looking it
+    up again in another is exactly the kind of thing that breaks across
+    pandas versions/edge cases (duplicate index entries, tz handling,
+    dtype quirks) for no benefit here. .iloc[0] on a dropna'd column and a
+    single vectorized column-aligned divide can't raise a KeyError.
+    """
     if price_df.empty:
         return price_df
-    df = price_df.dropna(how="all").copy()
-    first_valid = df.apply(lambda s: s.first_valid_index())
-    out = pd.DataFrame(index=df.index)
-    for col in df.columns:
-        base_idx = first_valid[col]
-        if base_idx is None:
-            continue
-        base = df[col].loc[base_idx]
-        if base and not np.isnan(base) and base != 0:
-            out[col] = df[col] / base * 100
-    return out
+    df = price_df.dropna(how="all")
+
+    def _first_valid_value(s: pd.Series):
+        s = s.dropna()
+        return s.iloc[0] if not s.empty else np.nan
+
+    bases = df.apply(_first_valid_value)
+    usable = bases[bases.notna() & (bases != 0)].index
+    if len(usable) == 0:
+        return pd.DataFrame(index=df.index)
+    return df[usable].divide(bases[usable], axis=1) * 100
 
 
 def indexed_performance_chart(price_df: pd.DataFrame, title: str = "Indexed Price Performance (Rebased to 100)") -> go.Figure:
