@@ -43,9 +43,12 @@ limits and to reduce how often this app has to ask Yahoo Finance for the same da
 
 - Yahoo Finance fundamentals are vendor-normalized and can occasionally be stale, missing, or defined
   slightly differently than GAAP as-filed figures.
-- Backlog, segment-level revenue mix, and guidance are reported by Moog in its earnings releases and
-  presentation decks but are not standardized XBRL tags, so they are **not** pulled into this dashboard —
-  see the official [Financial Materials page](""" + config.IR_LINKS["Financials"] + """) for those figures.
+- Moog's own "twelve-month backlog" figure is a voluntary, prose-disclosed metric with no XBRL tag —
+  the Financials page instead estimates it from two things most companies *do* tag under ASC 606 (total
+  Remaining Performance Obligation × the % expected within 12 months), which reproduces Moog's own number
+  closely but is not pulled verbatim. Segment-level revenue mix and forward guidance aren't standardized
+  XBRL tags either, so they're **not** pulled into this dashboard at all — see the official
+  [Financial Materials page](""" + config.IR_LINKS["Financials"] + """) for those figures.
 - Moog's fiscal year ends in early October; fiscal quarter labels here follow Moog's own fiscal calendar,
   not the calendar year.
 - Yahoo Finance periodically rate-limits or blocks requests from shared cloud hosting IP ranges (which

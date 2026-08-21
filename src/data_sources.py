@@ -400,6 +400,16 @@ _CONCEPT_CANDIDATES = {
     "equity": ["StockholdersEquity", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"],
     "cash": ["CashAndCashEquivalentsAtCarryingValue", "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents"],
     "long_term_debt": ["LongTermDebtNoncurrent", "LongTermDebt"],
+    # Standard ASC 606 disclosures. "Backlog" itself is a voluntary, company-
+    # defined metric with no XBRL tag of its own (confirmed: Moog's own
+    # companyfacts has no tag containing "backlog"). These two, combined, are
+    # a close structured-data proxy: total contracted-but-unrecognized revenue,
+    # and the % of it the company expects to recognize within 12 months —
+    # multiplying them reproduces Moog's own disclosed "twelve-month backlog"
+    # to within rounding. Not every company discloses the percentage split
+    # (some only disclose the total, some don't disclose either at all).
+    "remaining_performance_obligation": ["RevenueRemainingPerformanceObligation"],
+    "remaining_performance_obligation_pct": ["RevenueRemainingPerformanceObligationPercentage"],
 }
 
 

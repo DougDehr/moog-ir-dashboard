@@ -30,7 +30,8 @@ the app via `app.py`; the actual page content lives in `Summary.py` and `pages/`
 - **Ownership** — institutional holders, insider (Form 4) transaction history and net
   buy/sell activity, plus institutional/insider ownership % compared across competitors.
 - **Financials** — quarterly revenue/operating income/EPS trend and balance sheet
-  snapshot from SEC EDGAR XBRL, with optional peer overlay.
+  snapshot from SEC EDGAR XBRL, with optional peer overlay; an estimated 12-month backlog trend
+  (derived from ASC 606 disclosures) plus a breakdown of which competitors disclose a comparable figure.
 - **Filings & Events** — live recent SEC filings list, plus links to Moog's official
   earnings releases, presentations, and 10-Q/10-K filings.
 - **Export** — generates a single-page PDF snapshot (market data, latest-quarter

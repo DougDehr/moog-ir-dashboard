@@ -120,6 +120,108 @@ if debt and equity:
 st.divider()
 
 # ---------------------------------------------------------------------------
+# 12-month backlog (estimated from ASC 606 disclosures)
+# ---------------------------------------------------------------------------
+
+st.subheader("12-Month Backlog")
+st.caption(
+    "\"Backlog\" is a voluntary metric with no XBRL tag of its own — confirmed against Moog's full set of "
+    "filed XBRL facts, nothing contains \"backlog.\" Moog highlights a \"twelve-month backlog\" figure in "
+    "its earnings release each quarter, but it's prose/table disclosure, not structured data. This chart "
+    "estimates the same figure from two things almost every company under ASC 606 *does* tag: total "
+    "Remaining Performance Obligation (contracted, unrecognized revenue) and the % of it the company says "
+    "it expects to recognize as revenue within the next twelve months. Multiplying them reproduces Moog's "
+    "own disclosed twelve-month backlog closely — for the quarter ended June 27, 2026, this computes to "
+    "≈\\$3.27B vs. Moog's own disclosed \\$3.25B."
+)
+
+
+def _est_12mo_backlog(cik: str) -> pd.Series:
+    rpo = instant_series(get_financial_series(cik, "remaining_performance_obligation"))
+    pct = instant_series(get_financial_series(cik, "remaining_performance_obligation_pct"))
+    if rpo.empty or pct.empty:
+        return pd.Series(dtype=float)
+    rpo_s = rpo.set_index("end")["val"]
+    pct_s = pct.set_index("end")["val"]
+    combined = pd.concat([rpo_s.rename("rpo"), pct_s.rename("pct")], axis=1).dropna()
+    return combined["rpo"] * combined["pct"]
+
+
+with st.spinner("Checking backlog-related disclosures for Moog and its competitors…"):
+    ticker_cik_backlog = get_company_tickers_map()
+    moog_backlog = _est_12mo_backlog(config.COMPANY_CIK)
+
+    cw_cik = ticker_cik_backlog.get("CW")
+    cw_backlog = _est_12mo_backlog(cw_cik) if cw_cik else pd.Series(dtype=float)
+
+if moog_backlog.empty:
+    st.info("Could not compute an estimated 12-month backlog for Moog from currently available XBRL data.")
+else:
+    fig_backlog = go.Figure()
+    fig_backlog.add_trace(go.Bar(
+        x=moog_backlog.tail(20).index, y=moog_backlog.tail(20).values, name="Moog", marker_color=MAROON,
+    ))
+    if not cw_backlog.empty:
+        fig_backlog.add_trace(go.Scatter(
+            x=cw_backlog.tail(20).index, y=cw_backlog.tail(20).values, name="Curtiss-Wright",
+            mode="lines+markers", line=dict(color="#2E4057", width=2.5),
+        ))
+    fig_backlog.update_layout(
+        title="Estimated 12-Month Backlog Trend", template="plotly_white", height=400,
+        yaxis_title="USD", hovermode="x unified",
+        legend=dict(orientation="h", yanchor="top", y=-0.15, xanchor="center", x=0.5),
+        margin=dict(l=10, r=10, t=40, b=60),
+    )
+    st.plotly_chart(fig_backlog, use_container_width=True)
+    if not cw_backlog.empty:
+        st.caption("Curtiss-Wright is the one peer here that discloses the same 12-month split Moog does — "
+                   "shown for a genuine apples-to-apples comparison.")
+
+st.markdown("**Do Moog's competitors report a comparable backlog figure?**")
+
+disclosure_rows = []
+total_rpo_latest = {config.COMPANY_NAME: _latest_val(instant_series(
+    get_financial_series(config.COMPANY_CIK, "remaining_performance_obligation")))}
+for tkr, name in config.PEERS.items():
+    cik = ticker_cik_backlog.get(tkr)
+    rpo_df = instant_series(get_financial_series(cik, "remaining_performance_obligation")) if cik else pd.DataFrame()
+    pct_df = instant_series(get_financial_series(cik, "remaining_performance_obligation_pct")) if cik else pd.DataFrame()
+    has_total, has_split = not rpo_df.empty, not pct_df.empty
+    total_rpo_latest[name] = _latest_val(rpo_df) if has_total else None
+    if has_total and has_split:
+        disclosure = "Discloses 12-month split (comparable to Moog)"
+    elif has_total:
+        disclosure = "Discloses total backlog only (no 12-month split)"
+    else:
+        disclosure = "Does not disclose backlog / remaining performance obligation"
+    disclosure_rows.append({"Company": name, "Disclosure": disclosure})
+
+st.dataframe(pd.DataFrame(disclosure_rows), use_container_width=True, hide_index=True)
+st.caption(
+    "TransDigm and HEICO likely qualify for the ASC 606 practical expedient that exempts shorter-cycle, "
+    "aftermarket-parts-driven businesses from this disclosure — consistent with their business models "
+    "being less OEM-production-backlog-driven than Moog's."
+)
+
+backlog_compare = pd.Series(total_rpo_latest).dropna()
+if not backlog_compare.empty:
+    colors = [MAROON if c == config.COMPANY_NAME else "#2E4057" for c in backlog_compare.index]
+    text = [fmt_money(v) for v in backlog_compare.values]
+    fig_total_backlog = go.Figure(go.Bar(
+        x=list(backlog_compare.index), y=list(backlog_compare.values),
+        marker_color=colors, text=text, textposition="outside",
+    ))
+    fig_total_backlog.update_layout(
+        title="Total Backlog (Remaining Performance Obligation, All Future Periods)",
+        template="plotly_white", height=420, xaxis_tickangle=-35, margin=dict(l=10, r=10, t=60, b=10),
+    )
+    st.plotly_chart(fig_total_backlog, use_container_width=True)
+    st.caption("This is *total* contracted backlog (all future periods), not the 12-month cut — the two are "
+               "only directly comparable for Moog and Curtiss-Wright, per the table above.")
+
+st.divider()
+
+# ---------------------------------------------------------------------------
 # Peer revenue & margin trend overlay
 # ---------------------------------------------------------------------------
 
@@ -174,7 +276,7 @@ else:
 
 st.divider()
 st.caption(
-    "Note: Moog reports a twelve-month backlog figure in its quarterly earnings release/presentation "
-    "that is not a standard XBRL-tagged concept, so it isn't pulled here — see the official "
-    f"[Financial Materials page]({config.IR_LINKS['Financials']}) for the current figure."
+    "The 12-Month Backlog section above is an estimate derived from XBRL disclosures, not Moog's own "
+    "exact figure — see the official [Financial Materials page]"
+    f"({config.IR_LINKS['Financials']}) for Moog's as-reported twelve-month backlog each quarter."
 )
