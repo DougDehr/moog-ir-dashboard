@@ -53,7 +53,7 @@ def _yf_retry(fn, *args, retries: int = 2, base_delay: float = 1.5, **kwargs):
     raise last_exc
 
 
-def _stagger():
+def _yf_stagger():
     """A small jittered pause before a fresh (cache-miss) Yahoo Finance call.
 
     Pages like Competitor Analysis/Analysts/Ownership/Export call
@@ -64,6 +64,17 @@ def _stagger():
     unique ticker per cache window, never on a cache hit.
     """
     time.sleep(random.uniform(0.2, 0.5))
+
+
+def _sec_stagger():
+    """Same idea as _yf_stagger(), for SEC EDGAR. The Financials page's
+    12-month backlog section checks 2 concepts x 8 companies (16 requests)
+    in a tight loop with a cold cache, on top of whatever else the page
+    already fetches — SEC's fair-access policy explicitly reserves the
+    right to temporarily block an IP for bursty/excessive requests. SEC is
+    generally more generous than Yahoo, so a lighter pause is enough.
+    """
+    time.sleep(random.uniform(0.1, 0.25))
 
 
 # ---------------------------------------------------------------------------
@@ -105,7 +116,7 @@ def get_price_history(tickers: tuple[str, ...], period: str = "5y", interval: st
 def get_quote(ticker: str) -> dict:
     """Lightweight current-price snapshot for a single ticker."""
     try:
-        _stagger()
+        _yf_stagger()
         tk = yf.Ticker(ticker, session=_yf_session())
         fast = _yf_retry(lambda: tk.fast_info)
         if not fast:
@@ -129,7 +140,7 @@ def get_quote(ticker: str) -> dict:
 def get_fundamentals(ticker: str) -> dict:
     """Best-effort fundamentals snapshot (valuation + margin metrics) for one ticker."""
     try:
-        _stagger()
+        _yf_stagger()
         tk = yf.Ticker(ticker, session=_yf_session())
         info = _yf_retry(tk.get_info)
     except Exception as exc:  # pragma: no cover - network dependent
@@ -336,6 +347,21 @@ def _sec_get(url: str) -> requests.Response | None:
     return None
 
 
+def _sec_get_raw(url: str) -> requests.Response | None:
+    """Like _sec_get, but returns the response for ANY HTTP-level reply
+    (including 404), not just 200. None means the request never got an HTTP
+    response at all (network error, timeout, DNS failure). Used where the
+    caller needs to distinguish 'this concept genuinely isn't tagged'
+    (404 — common and expected, e.g. a company that doesn't disclose a given
+    ASC 606 item) from 'the fetch itself failed' (an external SEC EDGAR
+    issue) — _sec_get alone can't tell those apart, since both come back as
+    None."""
+    try:
+        return requests.get(url, headers={"User-Agent": sec_user_agent()}, timeout=15)
+    except Exception:
+        return None
+
+
 @st.cache_data(ttl=60 * 60 * 12, show_spinner=False)
 def get_company_tickers_map() -> dict:
     """ticker(upper) -> 10-digit zero-padded CIK, from SEC's canonical public list."""
@@ -414,7 +440,33 @@ _CONCEPT_CANDIDATES = {
 
 
 @st.cache_data(ttl=60 * 60 * 12, show_spinner=False)
+def get_concept_disclosure_status(cik: str, tag: str, taxonomy: str = "us-gaap") -> str:
+    """Tri-state check for a company's XBRL facts, distinguishing a genuine
+    absence from a fetch failure: 'has_data' (200, parses fine),
+    'not_tagged' (404 — the company simply doesn't file this concept, a
+    normal and expected outcome for optional ASC 606 disclosures like
+    backlog-related items), or 'fetch_failed' (anything else: network
+    error, timeout, rate-limit, 5xx — an external SEC EDGAR issue, not a
+    real answer about the company's disclosures)."""
+    cik10 = str(cik).zfill(10)
+    url = f"{SEC_BASE}/api/xbrl/companyconcept/CIK{cik10}/{taxonomy}/{tag}.json"
+    resp = _sec_get_raw(url)
+    if resp is None:
+        return "fetch_failed"
+    if resp.status_code == 404:
+        return "not_tagged"
+    if resp.status_code != 200:
+        return "fetch_failed"
+    try:
+        resp.json()
+    except Exception:
+        return "fetch_failed"
+    return "has_data"
+
+
+@st.cache_data(ttl=60 * 60 * 12, show_spinner=False)
 def get_xbrl_concept(cik: str, tag: str, taxonomy: str = "us-gaap") -> pd.DataFrame:
+    _sec_stagger()
     cik10 = str(cik).zfill(10)
     resp = _sec_get(f"{SEC_BASE}/api/xbrl/companyconcept/CIK{cik10}/{taxonomy}/{tag}.json")
     if resp is None:

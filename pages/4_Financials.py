@@ -7,6 +7,7 @@ import streamlit as st
 from src import config
 from src.data_sources import (
     get_company_tickers_map, get_financial_series, quarterly_from_concept, instant_series, as_value_series,
+    get_concept_disclosure_status,
 )
 from src.charts import fmt_money, fmt_pct, BRAND_COLORS
 from src.theme import inject_moog_theme, MAROON
@@ -155,7 +156,16 @@ with st.spinner("Checking backlog-related disclosures for Moog and its competito
     cw_backlog = _est_12mo_backlog(cw_cik) if cw_cik else pd.Series(dtype=float)
 
 if moog_backlog.empty:
-    st.info("Could not compute an estimated 12-month backlog for Moog from currently available XBRL data.")
+    # Moog reliably tags both concepts (verified above), so an empty result
+    # here means the fetch itself failed, not that the data doesn't exist —
+    # confirm which, so the message doesn't misrepresent a fetch failure as
+    # a data gap.
+    rpo_status = get_concept_disclosure_status(config.COMPANY_CIK, "RevenueRemainingPerformanceObligation")
+    pct_status = get_concept_disclosure_status(config.COMPANY_CIK, "RevenueRemainingPerformanceObligationPercentage")
+    if "fetch_failed" in (rpo_status, pct_status):
+        external_data_unavailable("Moog's backlog-related XBRL data", provider="SEC EDGAR", level="warning")
+    else:
+        st.info("Could not compute an estimated 12-month backlog for Moog from currently available XBRL data.")
 else:
     fig_backlog = go.Figure()
     fig_backlog.add_trace(go.Bar(
@@ -180,21 +190,51 @@ else:
 st.markdown("**Do Moog's competitors report a comparable backlog figure?**")
 
 disclosure_rows = []
+any_fetch_failed = False
 total_rpo_latest = {config.COMPANY_NAME: _latest_val(instant_series(
     get_financial_series(config.COMPANY_CIK, "remaining_performance_obligation")))}
 for tkr, name in config.PEERS.items():
     cik = ticker_cik_backlog.get(tkr)
-    rpo_df = instant_series(get_financial_series(cik, "remaining_performance_obligation")) if cik else pd.DataFrame()
-    pct_df = instant_series(get_financial_series(cik, "remaining_performance_obligation_pct")) if cik else pd.DataFrame()
-    has_total, has_split = not rpo_df.empty, not pct_df.empty
-    total_rpo_latest[name] = _latest_val(rpo_df) if has_total else None
-    if has_total and has_split:
+    if not cik:
+        disclosure_rows.append({"Company": name, "Disclosure": "Could not look up this company's SEC CIK"})
+        any_fetch_failed = True
+        continue
+
+    rpo_status = get_concept_disclosure_status(cik, "RevenueRemainingPerformanceObligation")
+    pct_status = get_concept_disclosure_status(cik, "RevenueRemainingPerformanceObligationPercentage")
+
+    if "fetch_failed" in (rpo_status, pct_status):
+        disclosure_rows.append({"Company": name, "Disclosure": "Could not check (SEC EDGAR fetch failed)"})
+        any_fetch_failed = True
+        continue
+
+    has_total = rpo_status == "has_data"
+    total_rpo_latest[name] = _latest_val(instant_series(get_financial_series(cik, "remaining_performance_obligation"))) if has_total else None
+
+    # A tag existing at all (pct_status == "has_data") isn't the same as it
+    # being a *live* disclosure — Parker Hannifin, for example, tagged the
+    # percentage split exactly once back in 2018 and hasn't since, which
+    # would otherwise misreport as "comparable to Moog." Require the
+    # combined (date-aligned) series to have a data point within the last
+    # ~15 months to count it as current.
+    has_current_split = False
+    if has_total and pct_status == "has_data":
+        peer_backlog_series = _est_12mo_backlog(cik)
+        if not peer_backlog_series.empty:
+            has_current_split = (pd.Timestamp.now() - peer_backlog_series.index.max()).days < 460
+
+    if has_total and has_current_split:
         disclosure = "Discloses 12-month split (comparable to Moog)"
     elif has_total:
-        disclosure = "Discloses total backlog only (no 12-month split)"
+        disclosure = "Discloses total backlog only (no current 12-month split)"
     else:
         disclosure = "Does not disclose backlog / remaining performance obligation"
     disclosure_rows.append({"Company": name, "Disclosure": disclosure})
+
+if any_fetch_failed:
+    external_data_unavailable(
+        "backlog disclosure data for one or more competitors", provider="SEC EDGAR", level="warning",
+    )
 
 st.dataframe(pd.DataFrame(disclosure_rows), use_container_width=True, hide_index=True)
 st.caption(
