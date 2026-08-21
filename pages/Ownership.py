@@ -9,6 +9,7 @@ from src.data_sources import (
 )
 from src.charts import fmt_money, fmt_pct, bar_compare
 from src.theme import inject_moog_theme
+from src.ui import external_data_unavailable
 
 st.set_page_config(page_title="Ownership — Moog IR Dashboard", page_icon="🏛️", layout="wide")
 inject_moog_theme()
@@ -41,6 +42,9 @@ with st.spinner("Pulling ownership data from Yahoo Finance…"):
     holders_breakdown = get_major_holders_breakdown(moog_ticker)
     inst_holders = get_institutional_holders(moog_ticker, limit=10)
     insider_tx = get_insider_transactions(moog_ticker, limit=20)
+
+if "error" in moog_f:
+    external_data_unavailable("ownership data for Moog", level="warning")
 
 m1, m2, m3, m4 = st.columns(4)
 m1.metric("Institutional Ownership", fmt_pct(moog_f.get("heldPercentInstitutions")))
@@ -119,7 +123,7 @@ else:
     own_df = pd.DataFrame(records)
 
     if own_df.empty:
-        st.warning("Could not retrieve peer ownership data right now — Yahoo Finance may be rate-limiting.")
+        external_data_unavailable("peer ownership data", level="warning")
     else:
         c1, c2 = st.columns(2)
         with c1:

@@ -10,6 +10,7 @@ from src import config
 from src.data_sources import get_quote, get_financial_series, quarterly_from_concept, get_fundamentals
 from src.charts import fmt_money, fmt_pct, fmt_ratio
 from src.theme import inject_moog_theme
+from src.ui import external_data_unavailable
 from src.report import build_one_pager
 
 st.set_page_config(page_title="Export — Moog IR Dashboard", page_icon="🖨️", layout="wide")
@@ -53,6 +54,8 @@ if st.button("Generate One-Pager", type="primary"):
             share_classes.append({"label": label, "price": price})
 
         moog_a = get_fundamentals(config.PRIMARY_TICKER)
+        if "error" in moog_a:
+            external_data_unavailable("some Moog fundamentals (market cap, analyst, ownership figures)", level="warning")
         market_cap = fmt_money(moog_a.get("marketCap"))
         week_range = (
             f"${moog_a['fiftyTwoWeekLow']:,.0f}–${moog_a['fiftyTwoWeekHigh']:,.0f}"

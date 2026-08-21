@@ -11,6 +11,7 @@ from src.data_sources import (
 )
 from src.charts import fmt_money, fmt_pct, bar_compare, BRAND_COLORS
 from src.theme import inject_moog_theme, MAROON
+from src.ui import external_data_unavailable
 
 st.set_page_config(page_title="Analyst Coverage — Moog IR Dashboard", page_icon="📊", layout="wide")
 inject_moog_theme()
@@ -61,7 +62,7 @@ with st.spinner("Pulling analyst data from Yahoo Finance…"):
     moog_f = get_fundamentals(moog_ticker)
 
 if "error" in moog_f or moog_f.get("currentPrice") is None:
-    st.warning("Could not retrieve analyst data for Moog right now — Yahoo Finance may be rate-limiting. Try again shortly.")
+    external_data_unavailable("analyst data for Moog", level="warning")
 else:
     current = moog_f["currentPrice"]
     mean_t = moog_f["targetMeanPrice"]
@@ -248,7 +249,7 @@ else:
     peer_df = pd.DataFrame(records)
 
     if peer_df.empty:
-        st.warning("Could not retrieve peer analyst data right now — Yahoo Finance may be rate-limiting.")
+        external_data_unavailable("peer analyst data", level="warning")
     else:
         display_df = peer_df.copy()
         display_df["Current Price"] = display_df["Current Price"].apply(fmt_money)

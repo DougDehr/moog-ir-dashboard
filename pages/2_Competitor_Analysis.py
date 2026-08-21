@@ -8,6 +8,7 @@ from src import config
 from src.data_sources import get_fundamentals
 from src.charts import fmt_money, fmt_pct, fmt_ratio, bar_compare, BRAND_COLORS
 from src.theme import inject_moog_theme, MAROON
+from src.ui import external_data_unavailable
 
 st.set_page_config(page_title="Competitor Analysis — Moog IR Dashboard", page_icon="⚖️", layout="wide")
 inject_moog_theme()
@@ -39,7 +40,7 @@ name_map = {moog_ticker: config.COMPANY_NAME, **config.PEERS}
 df["Company"] = [name_map.get(t, t) for t in df.index]
 
 if "error" in df.columns and df["error"].notna().all():
-    st.error("Could not retrieve fundamentals right now. Yahoo Finance may be rate-limiting — try again shortly.")
+    external_data_unavailable("fundamentals for the selected companies")
     st.stop()
 
 # ---------------------------------------------------------------------------

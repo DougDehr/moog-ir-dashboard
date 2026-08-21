@@ -50,8 +50,9 @@ limits and to reduce how often this app has to ask Yahoo Finance for the same da
   not the calendar year.
 - Yahoo Finance periodically rate-limits or blocks requests from shared cloud hosting IP ranges (which
   Streamlit Community Cloud uses) — an ongoing, publicly-documented issue on Yahoo's side, independent of
-  this app's own request volume. If a page shows "Yahoo Finance may be rate-limiting," it's usually
-  transient; reloading in a few minutes typically resolves it.
+  this app's own request volume. If a page shows a message that data "couldn't be loaded" from an external
+  provider, that's this — it's clearly labeled as the provider's issue, not a bug here, and reloading in a
+  few minutes typically resolves it.
 
 ### Disclaimer
 """)

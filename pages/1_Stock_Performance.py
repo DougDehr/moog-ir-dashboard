@@ -11,6 +11,7 @@ from src.charts import (
     beta_vs_benchmark, fmt_pct, bar_compare,
 )
 from src.theme import inject_moog_theme, MAROON
+from src.ui import external_data_unavailable
 
 st.set_page_config(page_title="Stock Performance — Moog IR Dashboard", page_icon="📈", layout="wide")
 inject_moog_theme()
@@ -56,7 +57,7 @@ with st.spinner("Pulling price history from Yahoo Finance…"):
     prices = get_price_history(tuple(tickers), period=period)
 
 if prices.empty:
-    st.error("Could not retrieve price data right now. Yahoo Finance may be rate-limiting — try again shortly.")
+    external_data_unavailable("price history for the selected tickers")
     st.stop()
 
 # ---------------------------------------------------------------------------
@@ -154,7 +155,7 @@ else:
     liq_df = pd.DataFrame(liq_records)
 
     if liq_df.empty:
-        st.warning("Could not retrieve peer short interest/liquidity data right now — Yahoo Finance may be rate-limiting.")
+        external_data_unavailable("peer short interest/liquidity data", level="warning")
     else:
         lc1, lc2 = st.columns(2)
         with lc1:

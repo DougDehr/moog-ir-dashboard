@@ -10,6 +10,7 @@ from src.data_sources import (
 )
 from src.charts import fmt_money, fmt_pct, BRAND_COLORS
 from src.theme import inject_moog_theme, MAROON
+from src.ui import external_data_unavailable
 
 st.set_page_config(page_title="Financials — Moog IR Dashboard", page_icon="💰", layout="wide")
 inject_moog_theme()
@@ -33,7 +34,7 @@ with st.spinner("Pulling XBRL financial data from SEC EDGAR…"):
     moog_data = _load_company_quarterlies(config.COMPANY_CIK)
 
 if moog_data["revenue"].empty:
-    st.error("SEC EDGAR did not return revenue data for Moog right now — the service may be rate-limiting. Try again shortly.")
+    external_data_unavailable("Moog's revenue data", provider="SEC EDGAR")
     st.stop()
 
 # ---------------------------------------------------------------------------
