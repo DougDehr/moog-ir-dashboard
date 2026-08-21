@@ -7,6 +7,7 @@ so the app stays responsive and polite to upstream services.
 
 from __future__ import annotations
 
+import random
 import time
 import requests
 import numpy as np
@@ -52,6 +53,19 @@ def _yf_retry(fn, *args, retries: int = 2, base_delay: float = 1.5, **kwargs):
     raise last_exc
 
 
+def _stagger():
+    """A small jittered pause before a fresh (cache-miss) Yahoo Finance call.
+
+    Pages like Competitor Analysis/Analysts/Ownership/Export call
+    get_fundamentals() for ~8 tickers in a tight loop. Right after a deploy
+    (in-memory cache is empty) that fires 8 requests back-to-back with zero
+    spacing, which reads as a burst/scrape pattern to Yahoo's rate limiter.
+    This only runs inside a cached function's body, so it's paid once per
+    unique ticker per cache window, never on a cache hit.
+    """
+    time.sleep(random.uniform(0.2, 0.5))
+
+
 # ---------------------------------------------------------------------------
 # Yahoo Finance — price history
 # ---------------------------------------------------------------------------
@@ -91,6 +105,7 @@ def get_price_history(tickers: tuple[str, ...], period: str = "5y", interval: st
 def get_quote(ticker: str) -> dict:
     """Lightweight current-price snapshot for a single ticker."""
     try:
+        _stagger()
         tk = yf.Ticker(ticker, session=_yf_session())
         fast = _yf_retry(lambda: tk.fast_info)
         if not fast:
@@ -114,6 +129,7 @@ def get_quote(ticker: str) -> dict:
 def get_fundamentals(ticker: str) -> dict:
     """Best-effort fundamentals snapshot (valuation + margin metrics) for one ticker."""
     try:
+        _stagger()
         tk = yf.Ticker(ticker, session=_yf_session())
         info = _yf_retry(tk.get_info)
     except Exception as exc:  # pragma: no cover - network dependent
