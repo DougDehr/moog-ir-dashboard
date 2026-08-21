@@ -33,7 +33,9 @@ with st.sidebar:
 
 
 def _rec_label(key):
-    if not key or key != key:
+    # Yahoo Finance uses the literal string "none" (not just Python None/NaN)
+    # as its own enum value for "no analyst rating available."
+    if not key or key != key or str(key).lower() == "none":
         return "n/a"
     return key.replace("_", " ").title()
 
