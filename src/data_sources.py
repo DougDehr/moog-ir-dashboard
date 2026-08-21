@@ -93,6 +93,8 @@ def get_quote(ticker: str) -> dict:
     try:
         tk = yf.Ticker(ticker, session=_yf_session())
         fast = _yf_retry(lambda: tk.fast_info)
+        if not fast:
+            return {"ticker": ticker, "error": "empty response from Yahoo Finance"}
         return {
             "ticker": ticker,
             "last_price": float(fast.get("lastPrice", np.nan)),
@@ -116,6 +118,13 @@ def get_fundamentals(ticker: str) -> dict:
         info = _yf_retry(tk.get_info)
     except Exception as exc:  # pragma: no cover - network dependent
         return {"ticker": ticker, "error": str(exc)}
+
+    # get_info() can come back empty/None on a degraded (but non-exception-
+    # raising) response from Yahoo — e.g. a soft rate-limit that returns a
+    # 200 with no data — rather than always raising. Treat that the same as
+    # any other fetch failure instead of crashing on info.get() below.
+    if not info:
+        return {"ticker": ticker, "error": "empty response from Yahoo Finance"}
 
     def g(key, default=None):
         return info.get(key, default)
