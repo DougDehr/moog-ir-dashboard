@@ -72,7 +72,7 @@ with quote_cols[-1]:
                f"${q_a.get('year_low', float('nan')):,.0f}–${q_a.get('year_high', float('nan')):,.0f}"
                if q_a.get("year_low") else "n/a")
 
-st.caption("Prices delayed per data vendor terms; refreshed on a ~15–30 minute cache cycle. Source: Yahoo Finance.")
+st.caption("Prices delayed per data vendor terms; refreshed on a ~20 minute cache cycle. Source: Yahoo Finance.")
 
 # ---------------------------------------------------------------------------
 # Latest reported quarter — KPI callout (mirrors Moog's "Latest Financial

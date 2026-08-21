@@ -35,8 +35,9 @@ suppliers of broadly comparable or adjacent scale. It is not an official Moog-de
 
 ### Refresh cadence
 
-Price quotes cache for ~15–30 minutes; fundamentals and SEC XBRL data cache for several hours, to stay
-well within the fair-access limits of free public APIs.
+Price quotes cache for ~20 minutes; price history for ~45 minutes; analyst/ownership/fundamentals data
+and SEC XBRL data cache for up to 12 hours — both to stay well within free public APIs' fair-access
+limits and to reduce how often this app has to ask Yahoo Finance for the same data twice.
 
 ### Limitations
 
@@ -47,6 +48,10 @@ well within the fair-access limits of free public APIs.
   see the official [Financial Materials page](""" + config.IR_LINKS["Financials"] + """) for those figures.
 - Moog's fiscal year ends in early October; fiscal quarter labels here follow Moog's own fiscal calendar,
   not the calendar year.
+- Yahoo Finance periodically rate-limits or blocks requests from shared cloud hosting IP ranges (which
+  Streamlit Community Cloud uses) — an ongoing, publicly-documented issue on Yahoo's side, independent of
+  this app's own request volume. If a page shows "Yahoo Finance may be rate-limiting," it's usually
+  transient; reloading in a few minutes typically resolves it.
 
 ### Disclaimer
 """)

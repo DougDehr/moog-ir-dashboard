@@ -13,6 +13,8 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 import yfinance as yf
+from curl_cffi import requests as cffi_requests
+from yfinance.exceptions import YFRateLimitError
 
 from src.config import sec_user_agent, COMPANY_CIK
 
@@ -21,24 +23,60 @@ SEC_WWW = "https://www.sec.gov"
 
 
 # ---------------------------------------------------------------------------
+# Yahoo Finance access: Yahoo aggressively rate-limits/blocks the shared IP
+# ranges that hosts like Streamlit Community Cloud use, independent of how
+# polite this app's own request volume is (a well-documented, ongoing
+# yfinance/Yahoo issue, not something fixable from app code alone). Two
+# mitigations: impersonate a real browser's TLS/HTTP fingerprint via
+# curl_cffi (yfinance's own current recommendation), and retry transient
+# rate-limit responses with backoff before giving up.
+# ---------------------------------------------------------------------------
+
+@st.cache_resource(show_spinner=False)
+def _yf_session():
+    return cffi_requests.Session(impersonate="chrome")
+
+
+def _yf_retry(fn, *args, retries: int = 2, base_delay: float = 1.5, **kwargs):
+    """Call fn(*args, **kwargs), retrying a couple of times (short backoff) on
+    a Yahoo rate-limit response. Re-raises the last error if all attempts fail,
+    so callers keep their existing try/except handling unchanged."""
+    last_exc = None
+    for attempt in range(retries + 1):
+        try:
+            return fn(*args, **kwargs)
+        except YFRateLimitError as exc:
+            last_exc = exc
+            if attempt < retries:
+                time.sleep(base_delay * (attempt + 1))
+    raise last_exc
+
+
+# ---------------------------------------------------------------------------
 # Yahoo Finance — price history
 # ---------------------------------------------------------------------------
 
-@st.cache_data(ttl=60 * 30, show_spinner=False)
+@st.cache_data(ttl=60 * 45, show_spinner=False)
 def get_price_history(tickers: tuple[str, ...], period: str = "5y", interval: str = "1d") -> pd.DataFrame:
     """Adjusted close price history for one or more tickers. Columns = tickers."""
     if not tickers:
         return pd.DataFrame()
-    data = yf.download(
-        list(tickers),
-        period=period,
-        interval=interval,
-        auto_adjust=True,
-        progress=False,
-        group_by="ticker",
-        threads=True,
-    )
-    if data.empty:
+    try:
+        data = _yf_retry(
+            yf.download,
+            list(tickers),
+            period=period,
+            interval=interval,
+            auto_adjust=True,
+            progress=False,
+            group_by="ticker",
+            threads=True,
+            session=_yf_session(),
+        )
+    except Exception:  # pragma: no cover - network dependent
+        return pd.DataFrame()
+
+    if data is None or data.empty:
         return pd.DataFrame()
 
     if len(tickers) == 1:
@@ -49,12 +87,12 @@ def get_price_history(tickers: tuple[str, ...], period: str = "5y", interval: st
     return close
 
 
-@st.cache_data(ttl=60 * 15, show_spinner=False)
+@st.cache_data(ttl=60 * 20, show_spinner=False)
 def get_quote(ticker: str) -> dict:
     """Lightweight current-price snapshot for a single ticker."""
     try:
-        tk = yf.Ticker(ticker)
-        fast = tk.fast_info
+        tk = yf.Ticker(ticker, session=_yf_session())
+        fast = _yf_retry(lambda: tk.fast_info)
         return {
             "ticker": ticker,
             "last_price": float(fast.get("lastPrice", np.nan)),
@@ -70,12 +108,12 @@ def get_quote(ticker: str) -> dict:
         return {"ticker": ticker, "error": str(exc)}
 
 
-@st.cache_data(ttl=60 * 60 * 6, show_spinner=False)
+@st.cache_data(ttl=60 * 60 * 12, show_spinner=False)
 def get_fundamentals(ticker: str) -> dict:
     """Best-effort fundamentals snapshot (valuation + margin metrics) for one ticker."""
     try:
-        tk = yf.Ticker(ticker)
-        info = tk.get_info()
+        tk = yf.Ticker(ticker, session=_yf_session())
+        info = _yf_retry(tk.get_info)
     except Exception as exc:  # pragma: no cover - network dependent
         return {"ticker": ticker, "error": str(exc)}
 
@@ -128,12 +166,12 @@ def get_fundamentals(ticker: str) -> dict:
     }
 
 
-@st.cache_data(ttl=60 * 60 * 6, show_spinner=False)
+@st.cache_data(ttl=60 * 60 * 12, show_spinner=False)
 def get_recommendations_trend(ticker: str) -> pd.DataFrame:
     """Monthly buy/hold/sell analyst-count trend (current month + prior 3), from Yahoo Finance."""
     try:
-        tk = yf.Ticker(ticker)
-        df = tk.recommendations
+        tk = yf.Ticker(ticker, session=_yf_session())
+        df = _yf_retry(lambda: tk.recommendations)
     except Exception:
         return pd.DataFrame()
     if df is None or df.empty:
@@ -141,12 +179,12 @@ def get_recommendations_trend(ticker: str) -> pd.DataFrame:
     return df
 
 
-@st.cache_data(ttl=60 * 60 * 6, show_spinner=False)
+@st.cache_data(ttl=60 * 60 * 12, show_spinner=False)
 def get_upgrades_downgrades(ticker: str, limit: int = 25) -> pd.DataFrame:
     """Recent analyst rating/price-target actions (firm, grade change, price target) from Yahoo Finance."""
     try:
-        tk = yf.Ticker(ticker)
-        df = tk.upgrades_downgrades
+        tk = yf.Ticker(ticker, session=_yf_session())
+        df = _yf_retry(lambda: tk.upgrades_downgrades)
     except Exception:
         return pd.DataFrame()
     if df is None or df.empty:
@@ -155,12 +193,12 @@ def get_upgrades_downgrades(ticker: str, limit: int = 25) -> pd.DataFrame:
     return df
 
 
-@st.cache_data(ttl=60 * 60 * 6, show_spinner=False)
+@st.cache_data(ttl=60 * 60 * 12, show_spinner=False)
 def get_major_holders_breakdown(ticker: str) -> dict:
     """Insider/institution ownership % breakdown from Yahoo Finance."""
     try:
-        tk = yf.Ticker(ticker)
-        mh = tk.major_holders
+        tk = yf.Ticker(ticker, session=_yf_session())
+        mh = _yf_retry(lambda: tk.major_holders)
     except Exception:
         return {}
     if mh is None or mh.empty or "Value" not in mh.columns:
@@ -168,12 +206,12 @@ def get_major_holders_breakdown(ticker: str) -> dict:
     return mh["Value"].to_dict()
 
 
-@st.cache_data(ttl=60 * 60 * 6, show_spinner=False)
+@st.cache_data(ttl=60 * 60 * 12, show_spinner=False)
 def get_institutional_holders(ticker: str, limit: int = 10) -> pd.DataFrame:
     """Top institutional holders (name, shares, % held, value, QoQ change) from Yahoo Finance."""
     try:
-        tk = yf.Ticker(ticker)
-        df = tk.institutional_holders
+        tk = yf.Ticker(ticker, session=_yf_session())
+        df = _yf_retry(lambda: tk.institutional_holders)
     except Exception:
         return pd.DataFrame()
     if df is None or df.empty:
@@ -202,12 +240,12 @@ def _classify_insider_text(text: str) -> str:
     return "Other"
 
 
-@st.cache_data(ttl=60 * 60 * 6, show_spinner=False)
+@st.cache_data(ttl=60 * 60 * 12, show_spinner=False)
 def get_insider_transactions(ticker: str, limit: int = 25) -> pd.DataFrame:
     """Recent Form 4 insider transactions (name, role, action, shares, value) from Yahoo Finance."""
     try:
-        tk = yf.Ticker(ticker)
-        df = tk.insider_transactions
+        tk = yf.Ticker(ticker, session=_yf_session())
+        df = _yf_retry(lambda: tk.insider_transactions)
     except Exception:
         return pd.DataFrame()
     if df is None or df.empty:
@@ -219,12 +257,12 @@ def get_insider_transactions(ticker: str, limit: int = 25) -> pd.DataFrame:
     return df.head(limit)
 
 
-@st.cache_data(ttl=60 * 60 * 6, show_spinner=False)
+@st.cache_data(ttl=60 * 60 * 12, show_spinner=False)
 def get_earnings_history(ticker: str, limit: int = 12) -> pd.DataFrame:
     """Trailing quarterly EPS estimate vs. actual and surprise %, from Yahoo Finance."""
     try:
-        tk = yf.Ticker(ticker)
-        df = tk.earnings_dates
+        tk = yf.Ticker(ticker, session=_yf_session())
+        df = _yf_retry(lambda: tk.earnings_dates)
     except Exception:
         return pd.DataFrame()
     if df is None or df.empty:
@@ -234,22 +272,22 @@ def get_earnings_history(ticker: str, limit: int = 12) -> pd.DataFrame:
     return df.tail(limit)
 
 
-@st.cache_data(ttl=60 * 60 * 6, show_spinner=False)
+@st.cache_data(ttl=60 * 60 * 12, show_spinner=False)
 def get_eps_trend(ticker: str) -> pd.DataFrame:
     """Consensus current-quarter/current-year EPS estimate now vs. 7/30/60/90 days ago."""
     try:
-        tk = yf.Ticker(ticker)
-        df = tk.eps_trend
+        tk = yf.Ticker(ticker, session=_yf_session())
+        df = _yf_retry(lambda: tk.eps_trend)
     except Exception:
         return pd.DataFrame()
     return df if df is not None else pd.DataFrame()
 
 
-@st.cache_data(ttl=60 * 60 * 6, show_spinner=False)
+@st.cache_data(ttl=60 * 60 * 12, show_spinner=False)
 def get_dividends(ticker: str, period: str = "5y") -> pd.Series:
     try:
-        tk = yf.Ticker(ticker)
-        div = tk.dividends
+        tk = yf.Ticker(ticker, session=_yf_session())
+        div = _yf_retry(lambda: tk.dividends)
         if div is None or div.empty:
             return pd.Series(dtype=float)
         div.index = div.index.tz_localize(None)
